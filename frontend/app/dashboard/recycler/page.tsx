@@ -167,7 +167,7 @@ export default function RecyclerDashboard() {
       {/* User Profile (Top) */}
       <div className="px-6 py-4 flex items-center gap-3 border-b border-gray-50">
         <div className="w-12 h-12 rounded-full bg-green-700 text-white flex items-center justify-center font-bold text-lg">
-          M
+          {(data.user.businessName || 'R')[0].toUpperCase()}
         </div>
         <div>
           <h4 className="font-bold text-gray-900 text-sm">{data.user.businessName}</h4>
