@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Globe, User, Recycle, ArrowRight } from "lucide-react";
 
-// 1. We rename your main component to 'Content' so we can wrap it in Suspense later
+// rename main component to 'Content' so it can wrap be in Suspense later
 function AccountSelectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

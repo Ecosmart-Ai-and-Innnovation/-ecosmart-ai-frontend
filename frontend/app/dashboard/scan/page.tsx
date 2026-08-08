@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Scan, Recycle, Lightbulb, Check, Camera, Upload, ArrowLeft } from "lucide-react";
 import { wasteApi } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { fileToCompressedDataUrl } from "@/lib/image";
 import type { WasteScanResult } from "@/lib/api";
 
 export default function ScannerPage() {
@@ -189,28 +190,25 @@ export default function ScannerPage() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const imgData = reader.result as string;
-      setCapturedImage(imgData);
-      stopCamera();
-      setScanning(true);
-      setError("");
-      wasteApi
-        .scan({ imageBase64: imgData })
-        .then((data) => setResult(data))
-        .catch((err: any) => {
-          setError(err.message || "Failed to analyze waste.");
-          setCapturedImage(null);
-          startCamera();
-        })
-        .finally(() => setScanning(false));
-    };
-    reader.readAsDataURL(file);
+    // Downscale before sending — raw phone photos can exceed the API's body limit //Ese's fix
+    const imgData = await fileToCompressedDataUrl(file);
+    setCapturedImage(imgData);
+    stopCamera();
+    setScanning(true);
+    setError("");
+    wasteApi
+      .scan({ imageBase64: imgData })
+      .then((data) => setResult(data))
+      .catch((err: any) => {
+        setError(err.message || "Failed to analyze waste.");
+        setCapturedImage(null);
+        startCamera();
+      })
+      .finally(() => setScanning(false));
   };
 
   const resetScan = () => {

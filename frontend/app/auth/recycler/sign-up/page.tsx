@@ -178,14 +178,6 @@ export default function RecyclerSignUpPage() {
               </div>
             )}
 
-            {/* Server Error Banner */}
-            {serverError && (
-              <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                <p className="text-[13px] md:text-sm text-red-600 font-medium">{serverError}</p>
-              </div>
-            )}
-
             {/* Responsive Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
 
@@ -345,7 +337,7 @@ export default function RecyclerSignUpPage() {
                   {agreed && <Check className="w-3 h-3 text-white" />}
                 </div>
                 <p className="text-[13px] md:text-sm text-gray-700 leading-snug">
-                  I agree to the <a href="#" className="font-semibold text-[#1b5030] hover:text-[#449339] transition-colors underline decoration-[#1b5030]/30 underline-offset-2">Terms & Conditions</a> and <a href="#" className="font-semibold text-[#1b5030] hover:text-[#449339] transition-colors underline decoration-[#1b5030]/30 underline-offset-2">Privacy Policy</a>
+                  I agree to the <span className="font-semibold text-[#1b5030]">Terms &amp; Conditions</span> and <span className="font-semibold text-[#1b5030]">Privacy Policy</span>
                 </p>
               </div>
 

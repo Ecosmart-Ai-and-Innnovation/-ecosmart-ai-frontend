@@ -4,25 +4,21 @@ import { useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Upload, Home } from "lucide-react";
+import { fileToCompressedDataUrl } from "@/lib/image";
 
 export default function ScanUploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const imageData = reader.result as string;
-      // Store the uploaded image for the scanner page to use
-      localStorage.setItem("scannedImage", imageData);
-      localStorage.setItem("scanSource", "upload");
-      // Navigate to the scanner page which handles analysis
-      router.push("/dashboard/scan");
-    };
-    reader.readAsDataURL(file);
+    // Downscale before storing — raw phone photos can exceed the API's body limit //Ese's fix
+    const imageData = await fileToCompressedDataUrl(file);
+    localStorage.setItem("scannedImage", imageData);
+    localStorage.setItem("scanSource", "upload");
+    router.push("/dashboard/scan");
   };
 
   return (

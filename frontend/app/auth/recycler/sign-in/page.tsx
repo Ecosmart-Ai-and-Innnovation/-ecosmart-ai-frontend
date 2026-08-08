@@ -4,36 +4,30 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import {
-  Globe, Eye, EyeOff, AlertCircle, Recycle
-} from 'lucide-react';
-// Corrected imports
+import { Globe, Eye, EyeOff, AlertCircle, Recycle } from 'lucide-react';
 import { authApi, otpApi, isApiError } from '@/lib/api';
 import { setToken, setUser } from '@/lib/auth';
 
 export default function RecyclerSignInPage() {
   const router = useRouter();
 
-  // Form State
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-
-  // UI State
   const [showPassword, setShowPassword] = useState(false);
-
-  // Validation State
   const [isFormValid, setIsFormValid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
-  // Validation Effect
+  // 1. Validation logic isolated in useEffect
   useEffect(() => {
     const isValid = identifier.trim().length >= 5 && password.length >= 6;
-    setIsFormValid(isValid);
-  }, [identifier, password]);
+    if (isValid !== isFormValid) {
+      setIsFormValid(isValid);
+    }
+  }, [identifier, password, isFormValid]);
 
-  // Handle Login
+  // 2. Handle Login within an Event Handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || loading) return;
@@ -45,7 +39,7 @@ export default function RecyclerSignInPage() {
     try {
       const result = await authApi.login(identifier, password);
       
-      if (result.token && result.user) {
+      if (result?.token && result?.user) {
         if (result.user.role === 'individual') {
           setError('This account is registered as an Individual. Please use the Individual login portal.');
           setLoading(false);
@@ -54,25 +48,25 @@ export default function RecyclerSignInPage() {
 
         setToken(result.token);
         setUser(result.user);
+        
+        // Use router.push inside this event handler to avoid render-cycle triggers
         router.push('/dashboard/recycler');
       }
     } catch (err: unknown) {
-      // Use the isApiError type guard instead of instanceof ApiError
       if (isApiError(err)) {
         if (err.code === 'email_not_verified') {
           const data = err.data as { email?: string } | undefined;
           setUnverifiedEmail(data?.email || identifier.trim());
           setError('Please verify your email before signing in.');
-          return;
+        } else {
+          setError(err.message || 'Login failed');
         }
-        setError(err.message || 'Login failed');
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('An unexpected error occurred');
       }
-    } finally {
-      setLoading(false);
+      setLoading(false); // Reset loading on error
     }
   };
 
@@ -85,15 +79,13 @@ export default function RecyclerSignInPage() {
       router.push(`/auth/recycler/verify-email?email=${encodeURIComponent(unverifiedEmail)}&purpose=signup`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend verification code.');
-    } finally {
       setLoading(false);
     }
   };
 
-  // ... (rest of your component remains exactly the same)
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col relative overflow-hidden">
-      {/* Edge-to-Edge Decorative Top Wave */}
+      {/* Decorative Top Wave */}
       <div className="absolute top-0 left-0 w-full h-48 md:h-64 lg:h-72 bg-[#f6fcf4] z-0">
          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="absolute bottom-0 w-full h-12 md:h-20 lg:h-24 block" fill="#ffffff">
            <path d="M0,120 L1200,120 L1200,0 Q600,140 0,0 Z" />
@@ -143,35 +135,27 @@ export default function RecyclerSignInPage() {
             <div className="w-full">
               <label className="block text-[13px] md:text-sm font-medium text-gray-800 mb-1.5 md:mb-2">Email or Phone Number</label>
               <div className={`relative flex items-center border rounded-2xl px-4 py-3.5 md:py-4 bg-white transition-colors shadow-sm ${error ? 'border-red-400' : 'border-gray-200 focus-within:border-[#449339]'}`}>
-                <input type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setError(''); }} name="identifier" placeholder="Enter your email or phone number" className="w-full outline-none text-[14px] md:text-[15px] text-gray-900 placeholder:text-gray-400 bg-transparent" />
+                <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Enter your email or phone number" className="w-full outline-none text-[14px] md:text-[15px] text-gray-900 placeholder:text-gray-400 bg-transparent" />
               </div>
             </div>
 
             <div className="w-full">
               <label className="block text-[13px] md:text-sm font-medium text-gray-800 mb-1.5 md:mb-2">Password</label>
               <div className={`relative flex items-center border rounded-2xl px-4 py-3.5 md:py-4 bg-white transition-colors shadow-sm ${error ? 'border-red-400' : 'border-gray-200 focus-within:border-[#449339]'}`}>
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(''); }} name="password" placeholder="Enter your password" className="w-full outline-none text-[14px] md:text-[15px] text-gray-900 placeholder:text-gray-400 bg-transparent" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="ml-2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer shrink-0">
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full outline-none text-[14px] md:text-[15px] text-gray-900 placeholder:text-gray-400 bg-transparent" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="ml-2 text-gray-400 hover:text-gray-600 shrink-0">
                   {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
             <div className="flex justify-end w-full -mt-2">
-              <Link href="/auth/recycler/forgot-password" className="text-[13px] md:text-sm font-bold text-[#1b5030] hover:text-[#449339] transition-colors underline decoration-[#1b5030]/30 underline-offset-4">Forgot Password?</Link>
+              <Link href="/auth/recycler/forgot-password" className="text-[13px] md:text-sm font-bold text-[#1b5030] hover:text-[#449339] underline underline-offset-4">Forgot Password?</Link>
             </div>
 
-            <div className="mt-4 w-full">
-              <button disabled={!isFormValid || loading} className={`w-full py-4 rounded-full font-semibold text-[16px] md:text-[17px] transition-all duration-300 ${isFormValid && !loading ? 'bg-[#549B45] text-white shadow-lg shadow-green-900/20 hover:bg-[#458237] hover:-translate-y-0.5 cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-                {loading ? 'Signing in...' : 'Login'}
-              </button>
-            </div>
-
-            <div className="text-center w-full mt-2">
-              <p className="text-[13px] md:text-[14px] text-gray-800 font-medium">
-                Don't have an account? <Link href="/auth/recycler/sign-up" className="font-bold text-[#1b5030] hover:text-[#449339] transition-colors hover:underline underline-offset-2">Sign Up</Link>
-              </p>
-            </div>
+            <button disabled={!isFormValid || loading} className={`w-full py-4 rounded-full font-semibold text-[16px] md:text-[17px] transition-all ${isFormValid && !loading ? 'bg-[#549B45] text-white shadow-lg hover:bg-[#458237]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+              {loading ? 'Signing in...' : 'Login'}
+            </button>
           </form>
         </div>
       </main>

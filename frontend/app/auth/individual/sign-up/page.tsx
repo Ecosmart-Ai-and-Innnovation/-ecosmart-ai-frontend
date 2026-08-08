@@ -55,7 +55,7 @@ export default function IndividualSignUpPage() {
     const cleanPhone = phone.replace(/\s/g, '');
     setIsPhoneValid(phoneRegex.test(cleanPhone));
 
-    const passValid = password.length >= 6;
+    const passValid = password.length >= 8;
     setIsPasswordValid(passValid);
 
     const confirmMatch = password === confirmPassword && confirmPassword.length > 0;
@@ -91,7 +91,7 @@ export default function IndividualSignUpPage() {
     if (nameTouched && !isNameValid) return { field: 'name', message: 'Name is required' };
     if (emailTouched && !isEmailValid) return { field: 'email', message: email.length > 0 ? 'Invalid email' : 'Email is required' };
     if (phoneTouched && !isPhoneValid) return { field: 'phone', message: phone.length > 0 ? 'Enter a valid 10-digit number' : 'Phone is required' };
-    if (passwordTouched && !isPasswordValid) return { field: 'password', message: 'Password must be at least 6 characters' };
+    if (passwordTouched && !isPasswordValid) return { field: 'password', message: 'Password must be at least 8 characters' };
     if (confirmTouched && !isConfirmValid) return { field: 'confirm', message: password.length === 0 ? 'Confirm your password' : 'Passwords do not match' };
     return null;
   };
@@ -160,14 +160,6 @@ export default function IndividualSignUpPage() {
           </div>
 
           <form className="w-full" onSubmit={handleSubmit}>
-            {serverError && (
-              <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                <p className="text-[13px] md:text-sm text-red-600 font-medium">{serverError}</p>
-              </div>
-            )}
-
-            {/* Server Error Banner */}
             {serverError && (
               <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
@@ -340,7 +332,7 @@ export default function IndividualSignUpPage() {
                   {agreed && <Check className="w-3 h-3 text-white" />}
                 </div>
                 <p className="text-[13px] md:text-sm text-gray-700 leading-snug">
-                  I agree to the <a href="#" className="font-semibold text-[#1b5030] hover:text-[#449339] transition-colors underline decoration-[#1b5030]/30 underline-offset-2">Terms & Conditions</a> and <a href="#" className="font-semibold text-[#1b5030] hover:text-[#449339] transition-colors underline decoration-[#1b5030]/30 underline-offset-2">Privacy Policy</a>
+                  I agree to the <span className="font-semibold text-[#1b5030]">Terms &amp; Conditions</span> and <span className="font-semibold text-[#1b5030]">Privacy Policy</span>
                 </p>
               </div>
 

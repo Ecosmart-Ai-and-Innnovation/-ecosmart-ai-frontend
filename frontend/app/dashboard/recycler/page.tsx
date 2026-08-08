@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Bell, Menu, X, Leaf, Shield, Grid, BarChart2, Zap,
   ArrowUpRight, Lightbulb, Bot, Home, User,
@@ -9,6 +8,7 @@ import {
   TrendingUp, Truck, Settings, HelpCircle, LogOut, Package, Activity
 } from 'lucide-react';
 import { getToken } from '@/lib/auth';
+import { dashboardApi } from '@/lib/api';
 
 // --- TYPESCRIPT INTERFACES (Preparing for Backend) ---
 export interface RecyclerRequest {
@@ -99,7 +99,16 @@ export default function RecyclerDashboard() {
   const [activeTab, setActiveTab] = useState('Home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const data = useDashboardData();
-  const router = useRouter();
+
+  // Lock body scroll when sidebar is open on mobile
+  // Must run before the `!data` early return below — hooks can't be conditional //Ese's fix
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isSidebarOpen]);
 
   // Loading state while API fetches
   if (!data) {
@@ -110,20 +119,16 @@ export default function RecyclerDashboard() {
     );
   }
 
-  // Remove a request (accept / decline)
-  const removeRequest = (id: string | number) => {
-    // In real app, call API here
-    console.log('Request action for:', id);
-  };
-
-  // Lock body scroll when sidebar is open on mobile
-  useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+  // Accept or decline a pickup request
+  const handleRequestAction = async (id: string | number, action: 'accept' | 'decline') => {
+    try {
+      await dashboardApi.requestAction(id, action);
+      // Refresh data after action
+      window.location.reload();
+    } catch (err) {
+      console.error('Request action failed:', err);
     }
-  }, [isSidebarOpen]);
+  };
 
   const navItems = [
     { id: 'Dashboard', icon: Home },
@@ -174,13 +179,7 @@ export default function RecyclerDashboard() {
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => {
-              if (item.id === 'Requests') {
-                router.push('/dashboard/recycler/requests');
-              } else {
-                setActiveTab(item.id);
-              }
-            }}
+            onClick={() => setActiveTab(item.id)}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
               activeTab === item.id
                 ? 'bg-[#f1f8ee] text-[#1b5030]'
@@ -395,10 +394,10 @@ export default function RecyclerDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => removeRequest(req.id)} className="flex-1 bg-[#449339] hover:bg-[#3a7d31] text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
+                      <button onClick={() => handleRequestAction(req.id, 'accept')} className="flex-1 bg-[#449339] hover:bg-[#3a7d31] text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
                         Accept
                       </button>
-                      <button onClick={() => removeRequest(req.id)} className="flex-1 border border-red-200 text-red-500 hover:bg-red-50 py-2.5 rounded-xl text-xs font-bold transition-colors">
+                      <button onClick={() => handleRequestAction(req.id, 'decline')} className="flex-1 border border-red-200 text-red-500 hover:bg-red-50 py-2.5 rounded-xl text-xs font-bold transition-colors">
                         Decline
                       </button>
                     </div>
