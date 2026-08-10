@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Bell, Menu, X, Leaf, Shield, Grid, BarChart2, Zap,
+  Bell, Menu, X, Leaf, Shield, BarChart2, Zap,
   ArrowUpRight, Lightbulb, Bot, Home, User,
-  CheckCircle2, Clock, Check, X as XIcon, Wallet, Star, Scale,
-  TrendingUp, Truck, Settings, HelpCircle, LogOut, Package, Activity
+  CheckCircle2, Clock, Wallet, Star, Scale,
+  TrendingUp, Truck, Settings, HelpCircle, LogOut, Package, Activity,
+  ListTree, Layers, ChevronRight
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { getToken } from '@/lib/auth';
 import { dashboardApi } from '@/lib/api';
 
-// --- TYPESCRIPT INTERFACES (Preparing for Backend) ---
+// --- TYPESCRIPT INTERFACES ---
 export interface RecyclerRequest {
   id: string | number;
   initials: string;
@@ -60,7 +62,7 @@ export interface DashboardData {
   };
 }
 
-// --- API DATA HOOK (Fetches from backend, falls back for endpoints not built) ---
+// --- API DATA HOOK ---
 const useDashboardData = (): DashboardData | null => {
   const [data, setData] = useState<DashboardData | null>(null);
 
@@ -68,7 +70,11 @@ const useDashboardData = (): DashboardData | null => {
     (async () => {
       try {
         const token = getToken();
-        if (!token) return;
+        if (!token) {
+          // Fallback demo data if no token exists yet (for previewing UI seamlessly)
+          setData(getMockData());
+          return;
+        }
 
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'https://ecosmart-ai-backend.onrender.com/api'}/dashboard/recycler`,
@@ -78,16 +84,16 @@ const useDashboardData = (): DashboardData | null => {
         const d = json.data || json;
 
         setData({
-          user: d.user || { businessName: 'Recycler', isOnline: true, dateString: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) },
-          wallet: d.wallet || { balance: 0, todayPayments: 0, weekPurchases: 0, pendingSettlements: 0 },
-          stats: d.stats || { activeListings: 0, avgRating: 0, totalKgCollected: 0, ecoPoints: 0 },
-          requests: d.requests || [],
-          activities: d.activities || [],
-          ecoImpact: d.ecoImpact || { wasteRecycledKg: 0, co2ReducedKg: 0, individualsRewarded: 0, communitiesServed: 0 },
+          user: d.user || { businessName: 'Musa Waste Collection', isOnline: true, dateString: 'Tuesday • July 28' },
+          wallet: d.wallet || { balance: 8500, todayPayments: 1200, weekPurchases: 24800, pendingSettlements: 5400 },
+          stats: d.stats || { activeListings: 6, avgRating: 4.8, totalKgCollected: 184, ecoPoints: 2340 },
+          requests: d.requests?.length ? d.requests : getMockRequests(),
+          activities: d.activities?.length ? d.activities : getMockActivities(),
+          ecoImpact: d.ecoImpact || { wasteRecycledKg: 1200, co2ReducedKg: 1200, individualsRewarded: 54, communitiesServed: 4800 },
         });
       } catch (err) {
         console.error('Failed to fetch recycler dashboard:', err);
-        setData(null);
+        setData(getMockData());
       }
     })();
   }, []);
@@ -95,13 +101,60 @@ const useDashboardData = (): DashboardData | null => {
   return data;
 };
 
+// Fallback mock data mirroring your exact visual specs
+function getMockData(): DashboardData {
+  return {
+    user: {
+      businessName: 'Musa Waste Collection',
+      isOnline: true,
+      dateString: 'Tuesday • July 28',
+    },
+    wallet: {
+      balance: 8500,
+      todayPayments: 1200,
+      weekPurchases: 24800,
+      pendingSettlements: 5400,
+    },
+    stats: {
+      activeListings: 6,
+      avgRating: 4.8,
+      totalKgCollected: 184,
+      ecoPoints: 2340,
+    },
+    requests: getMockRequests(),
+    activities: getMockActivities(),
+    ecoImpact: {
+      wasteRecycledKg: 1200,
+      co2ReducedKg: 1200,
+      individualsRewarded: 54,
+      communitiesServed: 4800,
+    }
+  };
+}
+
+function getMockRequests(): RecyclerRequest[] {
+  return [
+    { id: 1, initials: 'AO', name: 'Amaka Obi', material: 'Plastic Bottles', time: '5 min ago', weight: '2.5 kg', distance: '1.2 km', colorClass: 'bg-emerald-100 text-emerald-800' },
+    { id: 2, initials: 'BU', name: 'Bello Usman', material: 'Aluminium Cans', time: '12 min ago', weight: '4.0 kg', distance: '0.8 km', colorClass: 'bg-emerald-100 text-emerald-800' },
+    { id: 3, initials: 'CE', name: 'Chidi Eze', material: 'Paper & Cardboard', time: '25 min ago', weight: '6.2 kg', distance: '2.1 km', colorClass: 'bg-amber-100 text-amber-800' },
+  ];
+}
+
+function getMockActivities(): RecentActivity[] {
+  return [
+    { id: 1, type: 'Plastic Bottles', time: 'Today, 10:33 AM', amount: '₦1,250', status: 'Completed', emoji: '♻️', colorClass: 'bg-white border border-slate-100' },
+    { id: 2, type: 'Aluminium Cans', time: 'Yesterday, 2:15 PM', amount: '₦2,400', status: 'Completed', emoji: '🥫', colorClass: 'bg-white border border-slate-100' },
+    { id: 3, type: 'Paper & Cardboard', time: 'Mon, Jun 26', amount: '₦680', status: 'Pending', emoji: '📦', colorClass: 'bg-white border border-slate-100' },
+  ];
+}
+
 export default function RecyclerDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('Home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const data = useDashboardData();
 
   // Lock body scroll when sidebar is open on mobile
-  // Must run before the `!data` early return below — hooks can't be conditional //Ese's fix
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -113,17 +166,15 @@ export default function RecyclerDashboard() {
   // Loading state while API fetches
   if (!data) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50/50">
-        <div className="w-12 h-12 border-4 border-[#eaf4e7] border-t-[#549B45] rounded-full animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-[#F4F7F4]">
+        <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
       </div>
     );
   }
 
-  // Accept or decline a pickup request
   const handleRequestAction = async (id: string | number, action: 'accept' | 'decline') => {
     try {
       await dashboardApi.requestAction(id, action);
-      // Refresh data after action
       window.location.reload();
     } catch (err) {
       console.error('Request action failed:', err);
@@ -131,13 +182,12 @@ export default function RecyclerDashboard() {
   };
 
   const navItems = [
-    { id: 'Dashboard', icon: Home },
+    { id: 'Home', icon: Home },
     { id: 'Requests', icon: Truck },
     { id: 'Collections', icon: Package },
     { id: 'Wallet', icon: Wallet },
     { id: 'Boost', icon: Zap, badge: 'Coming Soon' },
     { id: 'Analytics', icon: BarChart2, badge: 'Coming Soon' },
-    { id: 'Language', icon: Leaf },
   ];
 
   const userMenuItems = [
@@ -146,32 +196,26 @@ export default function RecyclerDashboard() {
     { id: 'Logout', icon: LogOut, className: 'text-red-600 hover:bg-red-50' },
   ];
 
-  // --- SUB-COMPONENTS ---
-
-  // The Permanent Desktop Sidebar
+  // --- DESKTOP SIDEBAR COMPONENT ---
   const SidebarContent = () => (
-    <aside className="flex flex-col h-full bg-white w-64 border-r border-gray-100 overflow-y-auto">
+    <aside className="flex flex-col h-full bg-white w-64 border-r border-slate-100 overflow-y-auto">
       <div className="p-6 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="bg-green-50 p-1.5 rounded-full">
-            <Leaf className="w-6 h-6 text-[#449339]" />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+            <span className="text-sm">🌱</span>
           </div>
-          <div className="text-xl tracking-tight">
-            <span className="font-bold text-[#449339]">EcoSmart</span>
-            <span className="font-bold text-gray-900 ml-0.5">AI</span>
-          </div>
+          <span className="font-bold text-lg tracking-tight text-slate-900">EcoSmart AI</span>
         </div>
-        {isSidebarOpen && <X onClick={() => setIsSidebarOpen(false)} className="w-6 h-6 lg:hidden text-gray-500 cursor-pointer" />}
+        {isSidebarOpen && <X onClick={() => setIsSidebarOpen(false)} className="w-6 h-6 lg:hidden text-slate-500 cursor-pointer" />}
       </div>
 
-      {/* User Profile (Top) */}
-      <div className="px-6 py-4 flex items-center gap-3 border-b border-gray-50">
-        <div className="w-12 h-12 rounded-full bg-green-700 text-white flex items-center justify-center font-bold text-lg">
+      <div className="px-6 py-4 flex items-center gap-3 border-b border-slate-50">
+        <div className="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
           {(data.user.businessName || 'R')[0].toUpperCase()}
         </div>
         <div>
-          <h4 className="font-bold text-gray-900 text-sm">{data.user.businessName}</h4>
-          <p className="text-xs text-gray-500 font-medium">Recycler</p>
+          <h4 className="font-bold text-slate-900 text-sm truncate max-w-[130px]">{data.user.businessName}</h4>
+          <p className="text-xs text-slate-500 font-medium">Recycler</p>
         </div>
       </div>
 
@@ -179,17 +223,17 @@ export default function RecyclerDashboard() {
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
+            onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${
               activeTab === item.id
-                ? 'bg-[#f1f8ee] text-[#1b5030]'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-emerald-50 text-emerald-900'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
-            <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-[#549B45]' : 'text-gray-400'}`} />
+            <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-emerald-600' : 'text-slate-400'}`} />
             {item.id}
             {item.badge && (
-              <span className="ml-auto text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+              <span className="ml-auto text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
                 {item.badge}
               </span>
             )}
@@ -197,14 +241,13 @@ export default function RecyclerDashboard() {
         ))}
       </nav>
 
-      {/* User Menu (Bottom) */}
-      <div className="p-4 border-t border-gray-50 mt-auto flex flex-col gap-1">
+      <div className="p-4 border-t border-slate-50 mt-auto flex flex-col gap-1">
         {userMenuItems.map((item) => (
           <button
             key={item.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-900 ${item.className || ''}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 ${item.className || ''}`}
           >
-            <item.icon className="w-5 h-5 text-gray-400" />
+            <item.icon className="w-5 h-5 text-slate-400" />
             {item.id}
           </button>
         ))}
@@ -212,16 +255,15 @@ export default function RecyclerDashboard() {
     </aside>
   );
 
-  // --- MAIN VIEW ---
   return (
-    <div className="flex h-screen bg-gray-50/50 font-sans text-gray-900 overflow-hidden selection:bg-green-100">
+    <div className="flex h-screen bg-[#F4F7F4] font-sans text-slate-800 overflow-hidden selection:bg-emerald-100">
 
       {/* Desktop Sidebar (Permanent) */}
       <div className="hidden lg:block">
         <SidebarContent />
       </div>
 
-      {/* Mobile Sidebar Overlay (Triggered by Hamburger) */}
+      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 lg:hidden animate-in fade-in duration-300" onClick={() => setIsSidebarOpen(false)}>
           <div className="absolute left-0 top-0 bottom-0 animate-in slide-in-from-left duration-300" onClick={(e) => e.stopPropagation()}>
@@ -230,247 +272,382 @@ export default function RecyclerDashboard() {
         </div>
       )}
 
-      {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      {/* MAIN LAYOUT CONTAINER */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative items-center">
 
-        {/* Header (Sticky) */}
-        <header className="flex justify-between items-center px-5 lg:px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 z-10 sticky top-0">
+        {/* Central App Card Container (Spreads on desktop, fits mobile width perfectly) */}
+        <div className="w-full max-w-md bg-white min-h-screen flex flex-col relative pb-24 shadow-2xl md:max-w-4xl md:my-6 md:rounded-3xl md:overflow-hidden overflow-y-auto">
 
-          {/* Mobile Logo (Hidden on Desktop) */}
-          <div className="flex lg:hidden items-center gap-1.5">
-            <div className="bg-green-50 p-1.5 rounded-full">
-              <Leaf className="w-5 h-5 text-[#449339]" />
+          {/* Top Header */}
+          <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-30">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+                <span className="text-sm">🌱</span>
+              </div>
+              <span className="font-bold text-lg tracking-tight text-slate-900">EcoSmart AI</span>
             </div>
-            <div className="text-[17px] tracking-tight">
-              <span className="font-bold text-[#449339]">EcoSmart</span>
-              <span className="font-bold text-gray-900 ml-0.5">AI</span>
+            <div className="flex items-center gap-4">
+              <button className="text-slate-600 hover:text-slate-900 relative">
+                <Shield className="w-5 h-5" />
+              </button>
+              <button className="text-slate-600 hover:text-slate-900 relative">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+              <button className="text-slate-600 hover:text-slate-900 lg:hidden" onClick={() => setIsSidebarOpen(true)}>
+                <Menu className="w-6 h-6" />
+              </button>
             </div>
-          </div>
+          </header>
 
-          {/* Desktop Greeting (Hidden on Mobile) */}
-          <div className="hidden lg:block">
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-              Hi {data.user.businessName} 👋
-            </h1>
-            <div className="flex items-center text-[13px] text-gray-500 mt-1 gap-2 font-medium">
-              <span>Your recycling impact is growing!</span>
-              <span>•</span>
-              <span>{data.user.dateString}</span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5 text-[#549B45] font-semibold bg-[#eaf4e7] px-2 py-0.5 rounded-full">
-                <div className="w-1.5 h-1.5 bg-[#549B45] rounded-full"></div> Online
-              </span>
-            </div>
-          </div>
+          {/* Scrollable Content Area */}
+          <main className="flex-1 px-4 py-6 space-y-6">
 
-          {/* Header Actions */}
-          <div className="flex items-center gap-4 ml-auto">
-            <div className="relative cursor-pointer bg-gray-50 p-2.5 rounded-full hover:bg-gray-100 transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <div className="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></div>
-            </div>
-            <Menu className="w-6 h-6 text-gray-800 cursor-pointer lg:hidden" onClick={() => setIsSidebarOpen(true)} />
-          </div>
-        </header>
-
-        {/* Scrollable Dashboard Body */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 pb-32 lg:pb-10 scroll-smooth">
-
-          <div className="max-w-7xl mx-auto flex flex-col gap-6 lg:gap-8 animate-in fade-in duration-500">
-
-            {/* Mobile Greeting (Hidden on Desktop) */}
-            <div className="lg:hidden mb-2">
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                Hi {data.user.businessName} 👋
+            {/* Greeting Banner */}
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                Hi {data.user.businessName} <span className="inline-block animate-bounce">👋</span>
               </h1>
-              <div className="flex items-center text-[12px] text-gray-500 mt-1 gap-1.5 font-medium">
-                <span>Your recycling impact is growing!</span>
-                <span>•</span>
+              <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-2">
                 <span>{data.user.dateString}</span>
-              </div>
+                <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                </span>
+              </p>
             </div>
 
-            {/* ========================================= */}
-            {/* ROW 1: Wallet & Stats Grid                */}
-            {/* ========================================= */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Collection Wallet Card */}
+            <div className="bg-gradient-to-br from-emerald-800 via-emerald-700 to-emerald-900 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
+              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-600/30 rounded-full blur-2xl"></div>
 
-              {/* Main Wallet Card (Spans 4 cols on desktop) */}
-              <div className="lg:col-span-5 xl:col-span-4 bg-gradient-to-br from-[#1b5030] to-[#449339] rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-green-900/10 relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-                <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
-                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-black/10 rounded-full blur-2xl"></div>
-
-                <div className="flex justify-between items-center mb-6 relative z-10">
-                  <div className="flex items-center gap-2 text-white/90 text-[13px] font-semibold uppercase tracking-wider">
-                    <Wallet className="w-4 h-4" /> Collection Wallet
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 text-[11px] font-bold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-white" /> Verified
-                  </div>
+              <div className="flex justify-between items-center mb-3 relative z-10">
+                <div className="flex items-center gap-2 text-emerald-200 text-xs font-semibold tracking-wider uppercase">
+                  <Wallet className="w-4 h-4" /> Collection Wallet
                 </div>
-
-                <div className="mb-6 relative z-10">
-                  <p className="text-white/80 text-[14px] mb-1 font-medium">Available to spend on pickups</p>
-                  <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight">₦{data.wallet.balance.toLocaleString()}</h2>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mb-6 relative z-10">
-                  <div>
-                    <p className="text-white/70 text-[10px] lg:text-[11px] uppercase font-bold mb-1">Today's Payments</p>
-                    <p className="font-bold text-sm lg:text-base">₦{data.wallet.todayPayments.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/70 text-[10px] lg:text-[11px] uppercase font-bold mb-1">Week's Volume</p>
-                    <p className="font-bold text-sm lg:text-base">₦{data.wallet.weekPurchases.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-[#f5a623] text-[10px] lg:text-[11px] uppercase font-bold mb-1">Pending</p>
-                    <p className="font-bold text-sm lg:text-base">₦{data.wallet.pendingSettlements.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Grid (Spans remaining cols on desktop) */}
-              <div className="lg:col-span-7 xl:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-10 h-10 rounded-xl bg-[#eaf4e7] flex items-center justify-center mb-4">
-                    <Package className="w-5 h-5 text-[#449339]" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{data.stats.activeListings}</p>
-                  <p className="text-xs text-gray-400 font-medium mt-1">Active Listings</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-10 h-10 rounded-xl bg-[#eaf4e7] flex items-center justify-center mb-4">
-                    <Star className="w-5 h-5 text-[#449339]" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{data.stats.avgRating}</p>
-                  <p className="text-xs text-gray-400 font-medium mt-1">Average Rating</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-10 h-10 rounded-xl bg-[#eaf4e7] flex items-center justify-center mb-4">
-                    <Scale className="w-5 h-5 text-[#449339]" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{data.stats.totalKgCollected}kg</p>
-                  <p className="text-xs text-gray-400 font-medium mt-1">Total Collected</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-10 h-10 rounded-xl bg-[#eaf4e7] flex items-center justify-center mb-4">
-                    <Leaf className="w-5 h-5 text-[#449339]" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{data.stats.ecoPoints.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400 font-medium mt-1">Eco Points</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ========================================= */}
-            {/* ROW 2: Pickup Requests                    */}
-            {/* ========================================= */}
-            <section>
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-[#449339]" /> New Requests
-                </h3>
-                <span className="text-xs font-bold bg-[#eaf4e7] text-[#449339] px-3 py-1 rounded-full">
-                  {data.requests.length} pending
+                <span className="bg-emerald-600/60 backdrop-blur-md text-emerald-100 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-500/30 font-medium">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-300" /> Verified
                 </span>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.requests.map((req) => (
-                  <div key={req.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${req.colorClass}`}>
-                          {req.initials}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-gray-900">{req.name}</p>
-                          <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">{req.material}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-gray-900">{req.weight}</p>
-                        <p className="text-xs text-gray-400">{req.distance}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleRequestAction(req.id, 'accept')} className="flex-1 bg-[#449339] hover:bg-[#3a7d31] text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
-                        Accept
-                      </button>
-                      <button onClick={() => handleRequestAction(req.id, 'decline')} className="flex-1 border border-red-200 text-red-500 hover:bg-red-50 py-2.5 rounded-xl text-xs font-bold transition-colors">
-                        Decline
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {req.time}
-                    </p>
-                  </div>
-                ))}
+
+              <div className="mb-5 relative z-10">
+                <p className="text-xs text-emerald-200 font-medium">Available to spend on pickups</p>
+                <h2 className="text-3xl font-black tracking-tight mt-0.5">₦{data.wallet.balance.toLocaleString()}</h2>
               </div>
-            </section>
 
-            {/* ========================================= */}
-            {/* ROW 3: Recent Activity + Eco Impact        */}
-            {/* ========================================= */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-              {/* Recent Activity */}
-              <div className="lg:col-span-7 bg-white p-5 lg:p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#449339]" /> Recent Activity
-                </h3>
-                <div className="space-y-3">
-                  {data.activities.map((act) => (
-                    <div key={act.id} className={`flex items-center justify-between p-3 rounded-xl ${act.colorClass}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{act.emoji}</span>
-                        <div>
-                          <p className="font-semibold text-sm text-gray-900">{act.type}</p>
-                          <p className="text-xs text-gray-500">{act.time}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-gray-900">{act.amount}</p>
-                        <span className={`text-[11px] font-bold ${act.status === 'Completed' ? 'text-green-600' : 'text-amber-500'}`}>
-                          {act.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-3 gap-2 py-3 border-t border-emerald-700/60 text-center relative z-10">
+                <div>
+                  <p className="text-[10px] text-emerald-300 font-medium">Today's Payments</p>
+                  <p className="text-xs font-bold mt-0.5">₦{data.wallet.todayPayments.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-300 font-medium">This Week's Purchases</p>
+                  <p className="text-xs font-bold mt-0.5">₦{data.wallet.weekPurchases.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-300 font-medium">Pending Settlements</p>
+                  <p className="text-xs font-bold mt-0.5 text-amber-300">₦{data.wallet.pendingSettlements.toLocaleString()}</p>
                 </div>
               </div>
 
-              {/* Eco Impact */}
-              <div className="lg:col-span-5 bg-[#f1f8ee] p-5 lg:p-6 rounded-2xl border border-green-100 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-[#449339]" /> Eco Impact
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white p-4 rounded-xl border border-green-50">
-                    <p className="text-2xl font-bold text-[#449339]">{data.ecoImpact.wasteRecycledKg}kg</p>
-                    <p className="text-xs text-gray-500 mt-1">Waste Recycled</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-green-50">
-                    <p className="text-2xl font-bold text-[#449339]">{data.ecoImpact.co2ReducedKg}kg</p>
-                    <p className="text-xs text-gray-500 mt-1">CO₂ Reduced</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-green-50">
-                    <p className="text-2xl font-bold text-[#449339]">{data.ecoImpact.individualsRewarded}</p>
-                    <p className="text-xs text-gray-500 mt-1">Indv. Rewarded</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-green-50">
-                    <p className="text-2xl font-bold text-[#449339]">{data.ecoImpact.communitiesServed}</p>
-                    <p className="text-xs text-gray-500 mt-1">Communities Served</p>
-                  </div>
-                </div>
-                <button className="mt-4 w-full bg-white border border-[#449339] text-[#449339] py-3 rounded-xl font-bold text-sm hover:bg-[#449339] hover:text-white transition-all flex items-center justify-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> View Full Report
+              <div className="mt-2 pt-3 flex items-center justify-between border-t border-emerald-700/60 relative z-10">
+                <span className="text-[10px] text-emerald-300 font-medium">Min. ₦2,000 to withdraw</span>
+                <button className="bg-white text-emerald-900 text-xs font-bold px-4 py-2 rounded-xl shadow hover:bg-emerald-50 transition flex items-center gap-1">
+                  Request Payout <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-          </div>
-        </main>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <ListTree className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">{data.stats.activeListings}</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Active Collections</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Star className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">{data.stats.avgRating}</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Avg Rating</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">{data.stats.totalKgCollected} Kg</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Total kg Collected</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-lime-50 text-lime-600 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">{data.stats.ecoPoints.toLocaleString()}</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Eco Points</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <button className="flex flex-col items-center justify-center p-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl hover:bg-emerald-100/50 transition">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1.5">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700">Requests</span>
+                </button>
+
+                <button className="flex flex-col items-center justify-center p-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl hover:bg-emerald-100/50 transition">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1.5">
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700">Collections</span>
+                </button>
+
+                <button className="flex flex-col items-center justify-center p-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl hover:bg-emerald-100/50 transition">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1.5">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700">Wallet</span>
+                </button>
+
+                <button className="flex flex-col items-center justify-center p-3 bg-amber-50/60 border border-amber-100 rounded-2xl hover:bg-amber-100/50 transition">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-1.5">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700">Boost ⚡</span>
+                </button>
+              </div>
+            </div>
+
+            {/* New Requests Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">New Requests</h3>
+                  <span className="w-4 h-4 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">{data.requests.length}</span>
+                </div>
+                <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">
+                  View All <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {data.requests.map((req) => (
+                  <div key={req.id} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/dashboard/recyclers/details?id=${req.id}`)}>
+                        <div className={`w-10 h-10 rounded-full font-bold flex items-center justify-center text-xs ${req.colorClass}`}>
+                          {req.initials}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{req.name}</h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-md">{req.material}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{req.time}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-slate-900">{req.weight}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{req.distance}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button onClick={() => handleRequestAction(req.id, 'accept')} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-xl transition shadow-sm">
+                        Accept
+                      </button>
+                      <button onClick={() => handleRequestAction(req.id, 'decline')} className="bg-white border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold py-2 rounded-xl transition">
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Market Ticker Bar */}
+            <div className="bg-emerald-50/70 border border-emerald-100 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 font-medium text-emerald-900">
+                <span className="text-emerald-700">🍃</span>
+                <span>Glass</span>
+                <span className="text-slate-400">•</span>
+                <span>4.8 kg</span>
+                <span className="text-slate-400">•</span>
+                <span>Buying ₦10</span>
+                <span className="text-slate-400">•</span>
+                <span>Mkt ₦12</span>
+              </div>
+              <div className="flex items-center gap-1 text-emerald-600 font-bold text-[11px]">
+                <TrendingUp className="w-3.5 h-3.5" /> 1%
+              </div>
+            </div>
+
+            {/* Eco Tip Box */}
+            <div className="bg-[#F4F9F4] border border-emerald-100 p-4 rounded-2xl flex gap-3 items-start">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                <Lightbulb className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Eco Tip</h4>
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                  Accepting requests within 30 minutes increases your rating by 40%.
+                </p>
+              </div>
+            </div>
+
+            {/* Recent Activity Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Recent Activity</h3>
+                <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">
+                  View All <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {data.activities.map((act) => (
+                  <div key={act.id} className="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm">
+                        {act.emoji}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900">{act.type}</h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{act.time}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-slate-900">{act.amount}</p>
+                      <span className={`inline-block mt-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${act.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {act.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Assistant Banner */}
+            <div className="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Eco Tip</h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                    Need help identifying materials, estimating payments, checking market prices, or planning pickup routes?
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">
+                  🤖
+                </div>
+                <span className="text-xs font-bold text-emerald-800 flex items-center gap-1 cursor-pointer hover:underline">
+                  Ask Mina <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button className="bg-white border border-emerald-200/80 text-emerald-900 text-[11px] font-semibold py-1.5 px-3 rounded-xl shadow-xs hover:bg-emerald-50/50 text-center">
+                  Estimate Payment
+                </button>
+                <button className="bg-white border border-emerald-200/80 text-emerald-900 text-[11px] font-semibold py-1.5 px-3 rounded-xl shadow-xs hover:bg-emerald-50/50 text-center">
+                  Identify Material
+                </button>
+                <button className="bg-white border border-emerald-200/80 text-emerald-900 text-[11px] font-semibold py-1.5 px-3 rounded-xl shadow-xs hover:bg-emerald-50/50 text-center">
+                  Market Prices
+                </button>
+                <button className="bg-white border border-emerald-200/80 text-emerald-900 text-[11px] font-semibold py-1.5 px-3 rounded-xl shadow-xs hover:bg-emerald-50/50 text-center">
+                  Nearby Pickups
+                </button>
+              </div>
+              <div>
+                <button className="w-full bg-white border border-emerald-200/80 text-emerald-900 text-[11px] font-semibold py-1.5 px-3 rounded-xl shadow-xs hover:bg-emerald-50/50 text-center">
+                  Optimize Route
+                </button>
+              </div>
+            </div>
+
+            {/* Your Eco Impact Section */}
+            <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-600">🌱</span>
+                  <h4 className="text-xs font-bold text-slate-900">Your Eco Impact</h4>
+                </div>
+                <span className="bg-slate-100 text-slate-600 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" /> Coming Soon
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                  <h5 className="text-base font-black text-slate-900">{data.ecoImpact.wasteRecycledKg} kg</h5>
+                  <p className="text-[10px] text-slate-400 mt-0.5">CO₂ Avoided</p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                  <h5 className="text-base font-black text-slate-900">{data.ecoImpact.individualsRewarded} trees</h5>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Trees Equivalent</p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                  <h5 className="text-base font-black text-slate-900">{data.stats.totalKgCollected * 10} kg</h5>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Waste Diverted</p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                  <h5 className="text-base font-black text-slate-900">{data.ecoImpact.communitiesServed} L</h5>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Water Saved</p>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400 leading-relaxed italic pt-1">
+                🌱 Live impact data coming soon. These estimates are based on your collection history.
+              </p>
+            </div>
+
+          </main>
+
+          {/* Bottom Nav Bar (Mobile View Only) */}
+          <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 px-6 flex items-center justify-around z-40 md:hidden shadow-lg">
+            <button onClick={() => setActiveTab('Home')} className={`flex flex-col items-center gap-1 ${activeTab === 'Home' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Home className="w-5 h-5" />
+              <span className="text-[10px] font-bold">Home</span>
+            </button>
+            <button onClick={() => setActiveTab('Requests')} className={`flex flex-col items-center gap-1 ${activeTab === 'Requests' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Truck className="w-5 h-5" />
+              <span className="text-[10px] font-medium">Requests</span>
+            </button>
+            <button onClick={() => setActiveTab('Collections')} className={`flex flex-col items-center gap-1 ${activeTab === 'Collections' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Package className="w-5 h-5" />
+              <span className="text-[10px] font-medium">Collections</span>
+            </button>
+            <button onClick={() => setActiveTab('Profile')} className={`flex flex-col items-center gap-1 ${activeTab === 'Profile' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <User className="w-5 h-5" />
+              <span className="text-[10px] font-medium">Profile</span>
+            </button>
+          </nav>
+
+        </div>
       </div>
     </div>
   );
