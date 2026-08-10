@@ -301,7 +301,7 @@ export default function RecyclerDashboard() {
           </header>
 
           {/* Scrollable Content Area */}
-          <main className="flex-1 px-4 py-6 space-y-6">
+          <main className="flex-1 px-4 py-6 space-y-6 pb-20 md:pb-6">
 
             {/* Greeting Banner */}
             <div>
@@ -627,8 +627,8 @@ export default function RecyclerDashboard() {
 
           </main>
 
-          {/* Bottom Nav Bar */}
-          <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 px-6 flex items-center justify-around z-40 shadow-lg">
+          {/* Bottom Nav Bar — fixed on mobile, hidden on desktop (sidebar replaces it) */}
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 px-6 flex items-center justify-around z-50 shadow-lg md:hidden">
             <button onClick={() => setActiveTab('Home')} className={`flex flex-col items-center gap-1 ${activeTab === 'Home' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <Home className="w-5 h-5" />
               <span className="text-[10px] font-bold">Home</span>
