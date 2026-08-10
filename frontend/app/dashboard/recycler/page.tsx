@@ -9,7 +9,7 @@ import {
   ListTree, Layers, ChevronRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '@/lib/auth';
+import { getToken, getUser } from '@/lib/auth';
 import { dashboardApi } from '@/lib/api';
 
 // --- TYPESCRIPT INTERFACES ---
@@ -71,8 +71,9 @@ const useDashboardData = (): DashboardData | null => {
       try {
         const token = getToken();
         if (!token) {
-          // Fallback demo data if no token exists yet (for previewing UI seamlessly)
-          setData(getMockData());
+          // Fallback: use real user name from localStorage, not hardcoded mock
+          const storedUser = getUser();
+          setData(getMockData(storedUser?.name || 'Recycler'));
           return;
         }
 
@@ -84,7 +85,7 @@ const useDashboardData = (): DashboardData | null => {
         const d = json.data || json;
 
         setData({
-          user: d.user || { businessName: 'Musa Waste Collection', isOnline: true, dateString: 'Tuesday • July 28' },
+          user: d.user || { businessName: getUser()?.name || 'Recycler', isOnline: true, dateString: 'Tuesday • July 28' },
           wallet: d.wallet || { balance: 8500, todayPayments: 1200, weekPurchases: 24800, pendingSettlements: 5400 },
           stats: d.stats || { activeListings: 6, avgRating: 4.8, totalKgCollected: 184, ecoPoints: 2340 },
           requests: d.requests?.length ? d.requests : getMockRequests(),
@@ -93,7 +94,8 @@ const useDashboardData = (): DashboardData | null => {
         });
       } catch (err) {
         console.error('Failed to fetch recycler dashboard:', err);
-        setData(getMockData());
+        const storedUser = getUser();
+        setData(getMockData(storedUser?.name || 'Recycler'));
       }
     })();
   }, []);
@@ -102,10 +104,10 @@ const useDashboardData = (): DashboardData | null => {
 };
 
 // Fallback mock data mirroring your exact visual specs
-function getMockData(): DashboardData {
+function getMockData(businessName: string): DashboardData {
   return {
     user: {
-      businessName: 'Musa Waste Collection',
+      businessName,
       isOnline: true,
       dateString: 'Tuesday • July 28',
     },
