@@ -627,8 +627,8 @@ export default function RecyclerDashboard() {
 
           </main>
 
-          {/* Bottom Nav Bar (Mobile View Only) */}
-          <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 px-6 flex items-center justify-around z-40 md:hidden shadow-lg">
+          {/* Bottom Nav Bar */}
+          <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-3 px-6 flex items-center justify-around z-40 shadow-lg">
             <button onClick={() => setActiveTab('Home')} className={`flex flex-col items-center gap-1 ${activeTab === 'Home' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <Home className="w-5 h-5" />
               <span className="text-[10px] font-bold">Home</span>
